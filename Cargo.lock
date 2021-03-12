@@ -328,6 +328,7 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom",
  "rand",
+ "serde",
  "wasm-bindgen",
  "web-sys",
  "wee_alloc",

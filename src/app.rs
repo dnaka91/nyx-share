@@ -1,7 +1,9 @@
+use anyhow::Result;
+use serde::Deserialize;
 use web_sys::File;
 use yew::{
     events::ChangeData,
-    format::Binary,
+    format::Json,
     prelude::*,
     services::{
         fetch::{FetchTask, Request, Response},
@@ -14,6 +16,12 @@ use crate::{
     languages,
     multipart::MultiPart,
 };
+
+#[derive(Debug, Deserialize)]
+struct Data {
+    hash: String,
+    password: Option<String>,
+}
 
 pub struct App {
     link: ComponentLink<Self>,
@@ -138,15 +146,18 @@ impl Component for App {
                     languages::LIST[self.language].0,
                 );
 
-                let callback = self.link.callback(|resp: Response<Binary>| {
+                let callback = self.link.callback(|resp: Response<Json<Result<Data>>>| {
                     if resp.status().is_success() {
-                        Msg::SubmitResult(Ok(String::from_utf8(resp.into_body().unwrap()).unwrap()))
+                        match resp.into_body().0 {
+                            Ok(body) => Msg::SubmitResult(Ok(format!("{:?}", body))),
+                            Err(e) => Msg::SubmitResult(Err(e.to_string())),
+                        }
                     } else {
                         Msg::SubmitResult(Err(resp.status().to_string()))
                     }
                 });
 
-                let req = Request::post("https://share.nyx.xyz/upload")
+                let req = Request::post("https://share.nyx.xyz/upload/api?json")
                     .header("content-type", mp.content_type())
                     .body(Ok(mp.build()))
                     .unwrap();
